@@ -1,5 +1,7 @@
 #include "lib/Transform/Affine/AffineFullUnroll.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "mlir/Dialect/Affine/LoopUtils.h"
 #include "mlir/include/mlir/Pass/Pass.h"
 
@@ -17,6 +19,29 @@ void AffineFullUnrollPass::runOnOperation() {
       signalPassFailure();
     }
   });
+}
+// A rewrite pattern
+struct AffineFullUnrollPattern :
+  public OpRewritePattern<AffineForOp> {
+  AffineFullUnrollPattern(mlir::MLIRContext *context)
+      : OpRewritePattern<AffineForOp>(context, /*benefit=*/1) {}
+
+  LogicalResult matchAndRewrite(AffineForOp op,
+                                PatternRewriter &rewriter) const override {
+    // This is technically not allowed, since in a RewritePattern all
+    // modifications to the IR are supposed to go through the `rewriter` arg,
+    // but it works for our limited test cases.
+    return loopUnrollFull(op);
+  }
+};
+
+// A pass that invokes the pattern rewrite engine.
+void AffineFullUnrollPassAsPatternRewrite::runOnOperation() {
+  mlir::RewritePatternSet patterns(&getContext());
+  patterns.add<AffineFullUnrollPattern>(&getContext());
+  // One could use GreedyRewriteConfig here to slightly tweak the behavior of
+  // the pattern application.
+  (void)applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
 }
 
 } // namespace tutorial
