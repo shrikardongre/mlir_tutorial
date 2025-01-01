@@ -1,15 +1,31 @@
 #include "lib/Dialect/Poly/PolyDialect.h"
 
+#include "lib/Dialect/Poly/PolyTypes.h"
+#include "mlir/include/mlir/IR/Builders.h"
+#include "llvm/include/llvm/ADT/TypeSwitch.h"
+
 #include "lib/Dialect/Poly/PolyDialect.cpp.inc"
+#define GET_TYPEDEF_CLASSES
+#include "lib/Dialect/Poly/PolyTypes.cpp.inc"
 
 namespace mlir {
 namespace tutorial {
 namespace poly {
 
 void PolyDialect::initialize() {
-  // This is where we will register types and operations with the dialect
+  addTypes<
+#define GET_TYPEDEF_LIST
+#include "lib/Dialect/Poly/PolyTypes.cpp.inc"
+      >();
 }
+/// Parse a type registered to this dialect.
+  ::mlir::Type parseType(::mlir::DialectAsmParser &parser) const override;
 
-}  // namespace poly
-}  // namespace tutorial
-}  // namespace mlir
+  /// Print a type registered to this dialect.
+  void printType(::mlir::Type type,
+                 ::mlir::DialectAsmPrinter &os) const override;
+
+
+} // namespace poly
+} // namespace tutorial
+} // namespace mlir
